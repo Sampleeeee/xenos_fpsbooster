@@ -1,306 +1,216 @@
---// ESX is needed only for the menu default
-ESX = nil
-Citizen.CreateThread(function() while ESX == nil do TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end) Citizen.Wait(10) end end)
+local Config = {};
+Config.UsesEsx = false
 
-local type = nil
-local _menu = {
-    {label = 'Reset',  value = 'reset'},
-    {label = 'Ultra Low',    value = 'ulow'},
-    {label = 'Low',    value = 'low'},
-    {label = 'Medium', value = 'medium'},
-}
+local Levels = {};
+Levels.ULTRA_LOW    = "ulow"
+Levels.LOW          = "low"
+Levels.MEDIUM       = "medium"
+Levels.RESET        = "reset"
 
-RegisterCommand("fps", function()
-	ESX.UI.Menu.CloseAll()
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'fps', {
-		title    = 'FPS Booster (By XenoS)',
-		align    = 'top-left',
-		elements = _menu
-	}, function(data, menu)
-        local v = data.current.value
+local ESX = nil
+local currentLevel = nil
 
-        --// Things need to be runned only one time
-		if v == "reset" then
-            RopeDrawShadowEnabled(true)
+local function Print( message )
+    TriggerEvent( "chat:addMessage", {
+        args = { "FPS Booster", message }
+    } );
+end
 
-            CascadeShadowsSetAircraftMode(true)
-            CascadeShadowsEnableEntityTracker(false)
-            CascadeShadowsSetDynamicDepthMode(true)
-            CascadeShadowsSetEntityTrackerScale(5.0)
-            CascadeShadowsSetDynamicDepthValue(5.0)
-            CascadeShadowsSetCascadeBoundsScale(5.0)
-            
-            SetFlashLightFadeDistance(10.0)
-            SetLightsCutoffDistanceTweak(10.0)
-            DistantCopCarSirens(true)
-            SetArtificialLightsState(false)
-        elseif v == "ulow" then
-            RopeDrawShadowEnabled(false)
+local function OnChangeLevel( shadows, flashlight, rope, sirens, tracker )
+    RopeDrawShadowEnabled( rope or false );
 
-            CascadeShadowsClearShadowSampleType()
-            CascadeShadowsSetAircraftMode(false)
-            CascadeShadowsEnableEntityTracker(true)
-            CascadeShadowsSetDynamicDepthMode(false)
-            CascadeShadowsSetEntityTrackerScale(0.0)
-            CascadeShadowsSetDynamicDepthValue(0.0)
-            CascadeShadowsSetCascadeBoundsScale(0.0)
+    CascadeShadowsClearShadowSampleType();
+    CascadeShadowsSetAircraftMode( false );
+    CascadeShadowsEnableEntityTracker( true );
+    CascadeShadowsSetDynamicDepthMode( false );
+    CascadeShadowsSetEntityTrackerScale( tracker or shadows );
+    CascadeShadowsSetDynamicDepthValue( shadows );
+    CascadeShadowsSetCascadeBoundsScale( shadows );
 
-            SetFlashLightFadeDistance(0.0)
-            SetLightsCutoffDistanceTweak(0.0)
-            DistantCopCarSirens(false)
-        elseif v == "low" then
-            RopeDrawShadowEnabled(false)
+    SetFlashLightFadeDistance( flashlight );
+    SetLightsCutoffDistanceTweak( flashlight );
+    DistantCopCarSirens( sirens or false );
+end
 
-            CascadeShadowsClearShadowSampleType()
-            CascadeShadowsSetAircraftMode(false)
-            CascadeShadowsEnableEntityTracker(true)
-            CascadeShadowsSetDynamicDepthMode(false)
-            CascadeShadowsSetEntityTrackerScale(0.0)
-            CascadeShadowsSetDynamicDepthValue(0.0)
-            CascadeShadowsSetCascadeBoundsScale(0.0)
+local function CheckOnScreen( ent )
+    if not IsEntityOnScreen( ent ) then
+        SetEntityAlpha( ent, 0 );
+        SetEntityAsNoLongerNeeded( ent );
+    else
+        local alpha = GetEntityAlpha( ent );
 
-            SetFlashLightFadeDistance(5.0)
-            SetLightsCutoffDistanceTweak(5.0)
-            DistantCopCarSirens(false)
-        elseif v == "medium" then
-            RopeDrawShadowEnabled(true)
-
-            CascadeShadowsClearShadowSampleType()
-            CascadeShadowsSetAircraftMode(false)
-            CascadeShadowsEnableEntityTracker(true)
-            CascadeShadowsSetDynamicDepthMode(false)
-            CascadeShadowsSetEntityTrackerScale(5.0)
-            CascadeShadowsSetDynamicDepthValue(3.0)
-            CascadeShadowsSetCascadeBoundsScale(3.0)
-
-            SetFlashLightFadeDistance(3.0)
-            SetLightsCutoffDistanceTweak(3.0)
-            DistantCopCarSirens(false)
-            SetArtificialLightsState(false)
-		end
-
-        type = v
-	end, function(data, menu)
-		menu.close()
-	end)
-end)
-
--- // Distance rendering and entity handler (need a revision)
-Citizen.CreateThread(function()
-    while true do
-        if type == "ulow" then
-            --// Find closest ped and set the alpha
-            for ped in GetWorldPeds() do
-                if not IsEntityOnScreen(ped) then
-                    SetEntityAlpha(ped, 0)
-                    SetEntityAsNoLongerNeeded(ped)
-                else
-                    if GetEntityAlpha(ped) == 0 then
-                        SetEntityAlpha(ped, 255)
-                    elseif GetEntityAlpha(ped) ~= 210 then
-                        SetEntityAlpha(ped, 210)
-                    end
-                end
-
-                SetPedAoBlobRendering(ped, false)
-                Citizen.Wait(1)
-            end
-
-            --// Find closest object and set the alpha
-            for obj in GetWorldObjects() do
-                if not IsEntityOnScreen(obj) then
-                    SetEntityAlpha(obj, 0)
-                    SetEntityAsNoLongerNeeded(obj)
-                else
-                    if GetEntityAlpha(obj) == 0 then
-                        SetEntityAlpha(obj, 255)
-                    elseif GetEntityAlpha(obj) ~= 170 then
-                        SetEntityAlpha(obj, 170)
-                    end
-                end
-                Citizen.Wait(1)
-            end
-
-
-            DisableOcclusionThisFrame()
-            SetDisableDecalRenderingThisFrame()
-            RemoveParticleFxInRange(GetEntityCoords(PlayerPedId()), 10.0)
-            OverrideLodscaleThisFrame(0.4)
-            SetArtificialLightsState(true)
-        elseif type == "low" then
-            --// Find closest ped and set the alpha
-            for ped in GetWorldPeds() do
-                if not IsEntityOnScreen(ped) then
-                    SetEntityAlpha(ped, 0)
-                    SetEntityAsNoLongerNeeded(ped)
-                else
-                    if GetEntityAlpha(ped) == 0 then
-                        SetEntityAlpha(ped, 255)
-                    elseif GetEntityAlpha(ped) ~= 210 then
-                        SetEntityAlpha(ped, 210)
-                    end
-                end
-                SetPedAoBlobRendering(ped, false)
-
-                Citizen.Wait(1)
-            end
-
-            --// Find closest object and set the alpha
-            for obj in GetWorldObjects() do
-                if not IsEntityOnScreen(obj) then
-                    SetEntityAlpha(obj, 0)
-                    SetEntityAsNoLongerNeeded(obj)
-                else
-                    if GetEntityAlpha(obj) == 0 then
-                        SetEntityAlpha(obj, 255)
-                    elseif GetEntityAlpha(ped) ~= 210 then
-                        SetEntityAlpha(ped, 210)
-                    end
-                end
-                Citizen.Wait(1)
-            end
-
-            SetDisableDecalRenderingThisFrame()
-            RemoveParticleFxInRange(GetEntityCoords(PlayerPedId()), 10.0)
-            OverrideLodscaleThisFrame(0.6)
-            SetArtificialLightsState(true)
-        elseif type == "medium" then
-            --// Find closest ped and set the alpha
-            for ped in GetWorldPeds() do
-                if not IsEntityOnScreen(ped) then
-                    SetEntityAlpha(ped, 0)
-                    SetEntityAsNoLongerNeeded(ped)
-                else
-                    if GetEntityAlpha(ped) == 0 then
-                        SetEntityAlpha(ped, 255)
-                    end
-                end
-
-                SetPedAoBlobRendering(ped, false)
-                Citizen.Wait(1)
-            end
-        
-            --// Find closest object and set the alpha
-            for obj in GetWorldObjects() do
-                if not IsEntityOnScreen(obj) then
-                    SetEntityAlpha(obj, 0)
-                    SetEntityAsNoLongerNeeded(obj)
-                else
-                    if GetEntityAlpha(obj) == 0 then
-                        SetEntityAlpha(obj, 255)
-                    end
-                end
-                Citizen.Wait(1)
-            end
-
-            OverrideLodscaleThisFrame(0.8)
-        else
-            Citizen.Wait(500)
-        end
-        Citizen.Wait(8)
-    end
-end)
-
---// Clear broken thing, disable rain, disable wind and other tiny thing that dont require the frame tick
-Citizen.CreateThread(function()
-    while true do
-        if type == "ulow" or type == "low" then
-            ClearAllBrokenGlass()
-            ClearAllHelpMessages()
-            LeaderboardsReadClearAll()
-            ClearBrief()
-            ClearGpsFlags()
-            ClearPrints()
-            ClearSmallPrints()
-            ClearReplayStats()
-            LeaderboardsClearCacheData()
-            ClearFocus()
-            ClearHdArea()
-            ClearPedBloodDamage(PlayerPedId())
-            ClearPedWetness(PlayerPedId())
-            ClearPedEnvDirt(PlayerPedId())
-            ResetPedVisibleDamage(PlayerPedId())
-            ClearExtraTimecycleModifier()
-            ClearTimecycleModifier()
-            ClearOverrideWeather()
-            ClearHdArea()
-            DisableVehicleDistantlights(false)
-            DisableScreenblurFade()
-            SetRainLevel(0.0)
-            SetWindSpeed(0.0)
-            Citizen.Wait(300)
-        elseif type == "medium" then
-            ClearAllBrokenGlass()
-            ClearAllHelpMessages()
-            LeaderboardsReadClearAll()
-            ClearBrief()
-            ClearGpsFlags()
-            ClearPrints()
-            ClearSmallPrints()
-            ClearReplayStats()
-            LeaderboardsClearCacheData()
-            ClearFocus()
-            ClearHdArea()
-            SetWindSpeed(0.0)
-            Citizen.Wait(1000)
-        else
-            Citizen.Wait(1500)
+        if alpha == 0 then
+            SetEntityAlpha( ent, 255 );
+        elseif alpha ~= 210 then -- why?
+            SetEntityAlpha( ent, 210 ); 
         end
     end
-end)
+end
 
+local function RemoveIfNotOnScreen()
+    for k, v in ipairs( GetGamePool( "CPed" ) ) do
+        CheckOnScreen( v );
+        SetPedAoBlodRendering( v, false );
 
-
-
-
-
---// Entity Enumerator (https://gist.github.com/IllidanS4/9865ed17f60576425369fc1da70259b2#file-entityiter-lua)
-local entityEnumerator = {
-    __gc = function(enum)
-        if enum.destructor and enum.handle then
-            enum.destructor(enum.handle)
-        end
-        enum.destructor = nil
-        enum.handle = nil
+        Citizen.Wait( 1 );
     end
-}
 
-local function EnumerateEntities(initFunc, moveFunc, disposeFunc)
-    return coroutine.wrap(
-        function()
-            local iter, id = initFunc()
-            if not id or id == 0 then
-                disposeFunc(iter)
-                return
+    for k, v in ipairs( GetGamePool( "CObject" ) ) do
+        CheckOnScreen( v );
+        Citizen.Wait( 1 );
+    end
+end
+
+local function Tick( lodScale, extra, occlusion )
+    RemoveIfNotOnScreen();
+
+    if extra then
+        SetDisableDecalRenderingThisFrame();
+        RemoveParticleFxInRange( GetEntityCoords( PlayerPedId() ), 10.0 );
+        SetArtificialLightsState( true );
+    end
+
+    if occlusion then
+        DisableOcclusionThisFrame();
+    end
+    
+    OverrideLodscaleThisFrame( lodScale );
+    Citizen.Wait( 0 );
+end
+
+local function Interval( extra )
+    ClearAllBrokenGlass();
+    ClearAllHelpMessages();
+    LeaderboardsReadClearAll();
+    ClearBrief();
+    ClearGpsFlags();
+    ClearPrints();
+    ClearSmallPrints();
+    ClearReplayStats();
+    LeaderboardsClearCacheData();
+    ClearFocus();
+    ClearHdArea();
+    SetWindSpeed( 0.0 );
+
+    if extra then
+        local ped = PlayerPedId();
+
+        ClearPedBloodDamage( ped );
+        ClearPedWetness( ped );
+        ClearPedEnvDirt( ped );
+        ResetPedVisibleDamage( ped );
+        ClearExtraTimecycleModifier();
+        ClearTimecycleModifier();
+        ClearOverrideWeather();
+        ClearHdArea();
+        DisableVehicleDistantlights( false );
+        DisableScreenblurFade();
+        SetRainLevel( 0.0 );
+    end
+
+    Citizen.Wait( extra and 100 or 1000 );
+end
+
+local function SimpleThread( level, action )
+    Citizen.CreateThread( function() 
+        while currentLevel == level do
+            action();
+        end
+    end );
+end
+
+local function CreateThreads( level )
+    local lodScale = 0.8;
+
+    if level == Levels.ULTRA_LOW then
+        lodScale = 0.4;
+    elseif level == Levels.LOW then
+        lodScale = 0.6;
+    end
+
+    local extra = level ~= Levels.MEDIUM;
+    local occlusion = level == Levels.ULTRA_LOW;
+
+    SimpleThread( level, function() 
+        Tick( lodScale, extra, occlusion );
+    end );
+
+    SimpleThread( level, function() 
+        Interval( extra );
+    end );
+end
+
+local function SetLevel( level )
+    if level == Levels.RESET then
+        OnChangeLevel( 5.0, 10.0, true, true );
+    elseif level == Levels.ULTRA_LOW then
+        OnChangeLevel( 0.0, 0.0, false, false );
+    elseif level == Levels.LOW then
+        OnChangeLevel( 0.0, 5.0, false, false );
+    elseif level == Levels.MEDIUM then
+        OnChangeLevel( 3.0, 3.0, true, false, 5.0 );
+    else
+        Print( "That is not a valid level. Valid levels: 'ulow', 'low', 'medium', 'reset'." );
+        return;
+    end
+
+    CreateThreads();
+    currentLevel = level;
+end
+
+if Config.UsesEsx then
+    local function Esx()
+        local promise = promise.new();
+
+        Citizen.CreateThread( function()
+            while ESX == nil do 
+                TriggerEvent( "esx:getSharedObject", function( obj ) 
+                    ESX = obj;
+                end );
+
+                Citizen.Wait( 10 ) 
             end
 
-            local enum = {handle = iter, destructor = disposeFunc}
-            setmetatable(enum, entityEnumerator)
+            promise:reslove( ESX );
+        end );
 
-            local next = true
-            repeat
-                coroutine.yield(id)
-                next, id = moveFunc(iter)
-            until not next
+        return promise;
+    end
 
-            enum.destructor, enum.handle = nil, nil
-            disposeFunc(iter)
+    local elements = {
+        { label = "Ultra Low",  value = Levels.ULTRA_LOW },
+        { label = "Low",        value = Levels.LOW },
+        { label = "Medium",     value = Levels.MEDIUM },
+        { label = "Reset",      value = Levels.RESET }
+    }
+
+    local function CloseMenu( _, menu )
+        menu.close();
+    end
+
+    local function CreateEsxMenu()
+        Citizen.Await( Esx() );
+
+        ESX.UI.Menu.CloseAll()
+        ESX.UI.Menu.Open( "default", GetCurrentResourceName(), "fps", {
+            title       = "FPS Booster",
+            align       = "top-left",
+            elements    = elements
+        }, SetLevel, CloseMenu );
+    end
+
+    RegisterCommand( "fps", function( _, args )
+        if not args[1] then
+            CreateEsxMenu();
+            return;
         end
-    )
-end
 
-function GetWorldObjects()
-    return EnumerateEntities(FindFirstObject, FindNextObject, EndFindObject)
-end
-
-function GetWorldPeds()
-    return EnumerateEntities(FindFirstPed, FindNextPed, EndFindPed)
-end
-
-function GetWorldVehicles()
-    return EnumerateEntities(FindFirstVehicle, FindNextVehicle, EndFindVehicle)
-end
-
-function GetWorldPickups()
-    return EnumerateEntities(FindFirstPickup, FindNextPickup, EndFindPickup)
+        local level = tostring( args[1] ):lower();
+        SetLevel( level );
+    end );
+else
+    RegisterCommand( "fps", function( _, args )
+        local level = tostring( args[1] or "" ):lower();
+        SetLevel( level );
+    end );
 end
