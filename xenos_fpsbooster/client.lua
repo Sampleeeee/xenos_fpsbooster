@@ -171,7 +171,7 @@ if Config.UsesEsx then
                 Citizen.Wait( 10 ) 
             end
 
-            promise:reslove( ESX );
+            promise:resolve( ESX );
         end );
 
         return promise;
