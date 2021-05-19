@@ -48,14 +48,18 @@ local function CheckOnScreen( ent )
 end
 
 local function RemoveIfNotOnScreen()
-    for k, v in ipairs( GetGamePool( "CPed" ) ) do
+    local peds = GetGamePool( "CPed" );
+    for i = 1, #peds do
+        local v = peds[i];
         CheckOnScreen( v );
         SetPedAoBlodRendering( v, false );
 
         Citizen.Wait( 1 );
     end
 
-    for k, v in ipairs( GetGamePool( "CObject" ) ) do
+    local objects = GetGamePool( "CObject" );
+    for i = 1, #objects do
+        local v = objects[i];
         CheckOnScreen( v );
         Citizen.Wait( 1 );
     end
