@@ -208,9 +208,15 @@ if Config.UsesEsx then
         local level = tostring( args[1] ):lower();
         SetLevel( level );
     end );
+    
+    TriggerEvent( "chat:addSuggestion", "/fps", "helps players with lower-end computers." );
 else
     RegisterCommand( "fps", function( _, args )
         local level = tostring( args[1] or "" ):lower();
         SetLevel( level );
     end );
+    
+    TriggerEvent( "chat:addSuggestion", "/fps", "helps players with lower-end computers.", {
+        { name="level", help="Levels: ulow, low, medium, reset" }
+    } );
 end
