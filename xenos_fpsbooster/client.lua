@@ -2,13 +2,12 @@ local Config = {};
 Config.UsesEsx = false
 
 local Levels = {};
-Levels.ULTRA_LOW    = "ulow"
-Levels.LOW          = "low"
-Levels.MEDIUM       = "medium"
-Levels.RESET        = "reset"
+Levels.ULTRA_LOW    = "ulow";
+Levels.LOW          = "low";
+Levels.MEDIUM       = "medium";
+Levels.RESET        = "reset";
 
-local ESX = nil
-local currentLevel = nil
+local currentLevel = nil;
 
 local function Print( message )
     TriggerEvent( "chat:addMessage", {
@@ -163,23 +162,19 @@ local function SetLevel( level )
 end
 
 if Config.UsesEsx then
-    local function Esx()
-        local promise = promise.new();
+    local ESX = nil;
+    
+    local function LoadEsx()
+        while ESX == nil do 
+            TriggerEvent( "esx:getSharedObject", function( obj ) 
+                ESX = obj;
+            end );
 
-        Citizen.CreateThread( function()
-            while ESX == nil do 
-                TriggerEvent( "esx:getSharedObject", function( obj ) 
-                    ESX = obj;
-                end );
-
-                Citizen.Wait( 10 ) 
-            end
-
-            promise:resolve( ESX );
-        end );
-
-        return promise;
+            Citizen.Wait( 10 ) 
+        end
     end
+    
+    LoadEsx();
 
     local elements = {
         { label = "Ultra Low",  value = Levels.ULTRA_LOW },
@@ -193,7 +188,7 @@ if Config.UsesEsx then
     end
 
     local function CreateEsxMenu()
-        Citizen.Await( Esx() );
+        LoadEsx();
 
         ESX.UI.Menu.CloseAll()
         ESX.UI.Menu.Open( "default", GetCurrentResourceName(), "fps", {
